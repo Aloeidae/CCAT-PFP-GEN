@@ -1,0 +1,5 @@
+{
+  "name": "CCAT PFP Generator",
+  "description": "Composites an ushanka hat onto user-uploaded portraits using Runware image inference.",
+  "requestFramePermissions": []
+}
