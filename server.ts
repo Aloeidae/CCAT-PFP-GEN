@@ -1,22 +1,28 @@
 import express from "express";
 import path from "path";
+import fs from "fs";
 import multer from "multer";
-import { createServer as createViteServer } from "vite";
 import WebSocket from "ws";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const app = express();
-const PORT = 3000;
+const PORT = Number(process.env.PORT) || 3001;
 
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-const USHANKA_URL =
-  "https://raw.githubusercontent.com/Aloeidae/Host-Store/refs/heads/main/ushanka.png?token=GHSAT0AAAAAAD3A3YR2J5UHA7RNHIJLSP4I2QZ2ZWA";
+// The ushanka reference image ships with the app and is sent to Runware as a
+// base64 data URI, so there is no external URL that can expire or 404.
+const USHANKA_PATH = path.join(process.cwd(), "assets", "ushanka.png");
+
+function loadUshankaDataUri(): string {
+  const bytes = fs.readFileSync(USHANKA_PATH);
+  return `data:image/png;base64,${bytes.toString("base64")}`;
+}
 
 const PROMPT =
   "place the ushanka hat from image 1 on the character from image 2. Keep character and style identical to image 2 creating a new portrait of the character wearing an ushanka with red star and golden sickle and hammer";
@@ -29,7 +35,7 @@ function runwareCall(tasks: object[]): Promise<Map<string, any>> {
       return;
     }
 
-    const ws = new WebSocket("wss://ws.runware.ai/v1");
+    const ws = new WebSocket("wss://ws-api.runware.ai/v1");
     const responses = new Map<string, any>();
     const pendingUUIDs = new Set(
       (tasks as any[]).map((t) => t.taskUUID).filter(Boolean)
@@ -46,21 +52,25 @@ function runwareCall(tasks: object[]): Promise<Map<string, any>> {
     });
 
     ws.on("message", (raw) => {
-      let msgs: any[];
+      let parsed: any;
       try {
-        const parsed = JSON.parse(raw.toString());
-        msgs = Array.isArray(parsed) ? parsed : [parsed];
+        parsed = JSON.parse(raw.toString());
       } catch {
         return;
       }
 
-      for (const msg of msgs) {
-        if (msg.error) {
-          clearTimeout(timeout);
-          ws.close();
-          reject(new Error(msg.errorMessage || "Runware API error"));
-          return;
-        }
+      // Runware wraps results in { data: [...] } and errors in { errors: [...] }.
+      const errors = parsed.errors ?? (parsed.error ? [parsed] : []);
+      if (errors.length) {
+        clearTimeout(timeout);
+        ws.close();
+        const e = errors[0];
+        reject(new Error(e.message || e.errorMessage || "Runware API error"));
+        return;
+      }
+
+      const items: any[] = parsed.data ?? (Array.isArray(parsed) ? parsed : [parsed]);
+      for (const msg of items) {
         if (msg.taskType === "authentication" && !authenticated) {
           authenticated = true;
           ws.send(JSON.stringify(tasks));
@@ -94,7 +104,6 @@ function runwareCall(tasks: object[]): Promise<Map<string, any>> {
 async function startServer() {
   // API routes registered first, before any other middleware
   app.post("/api/edit-image", upload.single("image"), async (req, res) => {
-    console.log("[/api/edit-image] request received");
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No image provided" });
@@ -102,12 +111,20 @@ async function startServer() {
 
       const base64UserImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
 
+      let ushankaDataUri: string;
+      try {
+        ushankaDataUri = loadUshankaDataUri();
+      } catch {
+        return res.status(500).json({
+          error: `Ushanka reference image not found. Place it at ${USHANKA_PATH}.`,
+        });
+      }
+
       const ushankaUploadUUID = crypto.randomUUID();
       const userUploadUUID = crypto.randomUUID();
 
-      console.log("[/api/edit-image] uploading images to Runware...");
       const uploadResults = await runwareCall([
-        { taskType: "imageUpload", taskUUID: ushankaUploadUUID, image: USHANKA_URL },
+        { taskType: "imageUpload", taskUUID: ushankaUploadUUID, image: ushankaDataUri },
         { taskType: "imageUpload", taskUUID: userUploadUUID, image: base64UserImage },
       ]);
 
@@ -118,7 +135,6 @@ async function startServer() {
         return res.status(500).json({ error: "Failed to upload images to Runware" });
       }
 
-      console.log("[/api/edit-image] running inference...");
       const inferenceUUID = crypto.randomUUID();
       const inferenceResults = await runwareCall([
         {
@@ -135,7 +151,6 @@ async function startServer() {
       ]);
 
       const inferenceResult = inferenceResults.get(inferenceUUID);
-      console.log("[/api/edit-image] inference result:", inferenceResult);
 
       if (!inferenceResult?.imageURL) {
         return res.status(500).json({ error: "API did not return an image" });
@@ -143,13 +158,22 @@ async function startServer() {
 
       res.json({ imageUrl: inferenceResult.imageURL });
     } catch (err: any) {
-      console.error("[/api/edit-image] error:", err);
+      console.error("Error from Runware API:", err);
       res.status(500).json({ error: err.message || "Failed to edit image" });
     }
   });
 
   if (process.env.NODE_ENV !== "production") {
+    // Vite and its (ESM-only) plugins are loaded lazily here, never at the top
+    // level, so the production CJS bundle never require()s them. Config is inlined
+    // (configFile: false) so Vite doesn't read vite.config.ts off disk.
+    const { createServer: createViteServer } = await import("vite");
+    const react = (await import("@vitejs/plugin-react")).default;
+    const tailwindcss = (await import("@tailwindcss/vite")).default;
     const vite = await createViteServer({
+      configFile: false,
+      root: process.cwd(),
+      plugins: [react(), tailwindcss()],
       server: { middlewareMode: true },
       appType: "spa",
     });
