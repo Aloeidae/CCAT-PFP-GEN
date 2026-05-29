@@ -2,6 +2,7 @@ import express from "express";
 import path from "path";
 import fs from "fs";
 import multer from "multer";
+import rateLimit from "express-rate-limit";
 import WebSocket from "ws";
 import dotenv from "dotenv";
 
@@ -10,9 +11,28 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
+// Render terminates TLS at a single proxy hop and forwards the client IP via
+// X-Forwarded-For. Trust exactly one hop so the rate limiter keys on the real
+// client IP (and not the proxy) without letting clients spoof the header.
+app.set("trust proxy", 1);
+
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+// Public, unauthenticated endpoint: cap generations per IP so a single visitor
+// can't burn the shared Runware budget. The hard backstop is the Runware spend
+// limit set in the dashboard.
+const generationLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000, // 10 minutes
+  max: 8,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: {
+    error:
+      "[ RATE LIMIT EXCEEDED ] Too many requisitions, comrade. The bureau must process other citizens. Please return after a short cooling-off period.",
+  },
 });
 
 // The ushanka reference image ships with the app and is sent to Runware as a
@@ -103,7 +123,7 @@ function runwareCall(tasks: object[]): Promise<Map<string, any>> {
 
 async function startServer() {
   // API routes registered first, before any other middleware
-  app.post("/api/edit-image", upload.single("image"), async (req, res) => {
+  app.post("/api/edit-image", generationLimiter, upload.single("image"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: "No image provided" });
