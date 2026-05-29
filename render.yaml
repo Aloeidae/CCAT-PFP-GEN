@@ -1,0 +1,17 @@
+services:
+  - type: web
+    name: ccat-pfp-gen
+    runtime: node
+    plan: free
+    region: oregon
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    healthCheckPath: /
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: NODE_VERSION
+        value: 22.12.0
+      # Set this in the Render dashboard (Environment tab) — not stored in the repo.
+      - key: RUNWARE_API_KEY
+        sync: false
