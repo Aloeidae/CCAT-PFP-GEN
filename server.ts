@@ -10,9 +10,8 @@ dotenv.config();
 const app = express();
 const PORT = 3000;
 
-const storage = multer.memoryStorage();
 const upload = multer({
-  storage,
+  storage: multer.memoryStorage(),
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
@@ -33,7 +32,7 @@ function runwareCall(tasks: object[]): Promise<Map<string, any>> {
     const ws = new WebSocket("wss://ws.runware.ai/v1");
     const responses = new Map<string, any>();
     const pendingUUIDs = new Set(
-      tasks.map((t: any) => t.taskUUID).filter(Boolean)
+      (tasks as any[]).map((t) => t.taskUUID).filter(Boolean)
     );
     let authenticated = false;
 
@@ -92,60 +91,63 @@ function runwareCall(tasks: object[]): Promise<Map<string, any>> {
   });
 }
 
-app.post("/api/edit-image", upload.single("image"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No image provided" });
-    }
-
-    const base64UserImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
-
-    const ushankaUploadUUID = crypto.randomUUID();
-    const userUploadUUID = crypto.randomUUID();
-
-    // Upload both images simultaneously
-    const uploadResults = await runwareCall([
-      { taskType: "imageUpload", taskUUID: ushankaUploadUUID, image: USHANKA_URL },
-      { taskType: "imageUpload", taskUUID: userUploadUUID, image: base64UserImage },
-    ]);
-
-    const ushankaResult = uploadResults.get(ushankaUploadUUID);
-    const userResult = uploadResults.get(userUploadUUID);
-
-    if (!ushankaResult?.imageUUID || !userResult?.imageUUID) {
-      return res.status(500).json({ error: "Failed to upload images to Runware" });
-    }
-
-    // Run inference with ushanka as image 1, user photo as image 2
-    const inferenceUUID = crypto.randomUUID();
-    const inferenceResults = await runwareCall([
-      {
-        taskType: "imageInference",
-        taskUUID: inferenceUUID,
-        model: "google:4@3",
-        positivePrompt: PROMPT,
-        width: 512,
-        height: 512,
-        numberResults: 1,
-        outputFormat: "PNG",
-        inputImages: [ushankaResult.imageUUID, userResult.imageUUID],
-      },
-    ]);
-
-    const inferenceResult = inferenceResults.get(inferenceUUID);
-
-    if (!inferenceResult?.imageURL) {
-      return res.status(500).json({ error: "API did not return an image" });
-    }
-
-    res.json({ imageUrl: inferenceResult.imageURL });
-  } catch (err: any) {
-    console.error("Error from Runware API:", err);
-    res.status(500).json({ error: err.message || "Failed to edit image" });
-  }
-});
-
 async function startServer() {
+  // API routes registered first, before any other middleware
+  app.post("/api/edit-image", upload.single("image"), async (req, res) => {
+    console.log("[/api/edit-image] request received");
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: "No image provided" });
+      }
+
+      const base64UserImage = `data:${req.file.mimetype};base64,${req.file.buffer.toString("base64")}`;
+
+      const ushankaUploadUUID = crypto.randomUUID();
+      const userUploadUUID = crypto.randomUUID();
+
+      console.log("[/api/edit-image] uploading images to Runware...");
+      const uploadResults = await runwareCall([
+        { taskType: "imageUpload", taskUUID: ushankaUploadUUID, image: USHANKA_URL },
+        { taskType: "imageUpload", taskUUID: userUploadUUID, image: base64UserImage },
+      ]);
+
+      const ushankaResult = uploadResults.get(ushankaUploadUUID);
+      const userResult = uploadResults.get(userUploadUUID);
+
+      if (!ushankaResult?.imageUUID || !userResult?.imageUUID) {
+        return res.status(500).json({ error: "Failed to upload images to Runware" });
+      }
+
+      console.log("[/api/edit-image] running inference...");
+      const inferenceUUID = crypto.randomUUID();
+      const inferenceResults = await runwareCall([
+        {
+          taskType: "imageInference",
+          taskUUID: inferenceUUID,
+          model: "google:4@3",
+          positivePrompt: PROMPT,
+          width: 512,
+          height: 512,
+          numberResults: 1,
+          outputFormat: "PNG",
+          inputImages: [ushankaResult.imageUUID, userResult.imageUUID],
+        },
+      ]);
+
+      const inferenceResult = inferenceResults.get(inferenceUUID);
+      console.log("[/api/edit-image] inference result:", inferenceResult);
+
+      if (!inferenceResult?.imageURL) {
+        return res.status(500).json({ error: "API did not return an image" });
+      }
+
+      res.json({ imageUrl: inferenceResult.imageURL });
+    } catch (err: any) {
+      console.error("[/api/edit-image] error:", err);
+      res.status(500).json({ error: err.message || "Failed to edit image" });
+    }
+  });
+
   if (process.env.NODE_ENV !== "production") {
     const vite = await createViteServer({
       server: { middlewareMode: true },
@@ -155,7 +157,7 @@ async function startServer() {
   } else {
     const distPath = path.join(process.cwd(), "dist");
     app.use(express.static(distPath));
-    app.get("*", (req, res) => {
+    app.get("*", (_req, res) => {
       res.sendFile(path.join(distPath, "index.html"));
     });
   }
@@ -165,4 +167,4 @@ async function startServer() {
   });
 }
 
-startServer();
+startServer().catch(console.error);
