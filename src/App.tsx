@@ -6,7 +6,6 @@
 import React, { useState, useRef } from "react";
 import { Upload, Image as ImageIcon, Star, AlertCircle, RefreshCw, Globe } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
-import { generateUshanka } from "./runware";
 
 const t = {
   EN: {
@@ -100,9 +99,22 @@ export default function App() {
     setIsLoading(true);
     setError(null);
 
+    const formData = new FormData();
+    formData.append("image", selectedFile);
+
     try {
-      const imageUrl = await generateUshanka(selectedFile);
-      setResultImage(imageUrl);
+      const res = await fetch("/api/edit-image", {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to process image");
+      }
+
+      setResultImage(data.imageUrl);
     } catch (err: any) {
       setError(err.message || "An unexpected error occurred");
     } finally {
