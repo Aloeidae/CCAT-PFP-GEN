@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef } from "react";
-import { Upload, Image as ImageIcon, Star, AlertCircle, RefreshCw, Globe } from "lucide-react";
+import { Upload, Image as ImageIcon, Star, AlertCircle, RefreshCw, Globe, Send, Twitter, TrendingUp, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 const t = {
@@ -22,6 +22,12 @@ const t = {
     ready: "Subject ready for uniform distribution.",
     button: "Issue Uniform",
     error_type: "Please select a valid state-approved image file.",
+    comms_title: "Party Communications",
+    comms_hint: "Approved channels of the glorious collective",
+    ca_label: "State Contract Address",
+    copy: "Copy",
+    copied: "Copied, Comrade!",
+    footer_motto: "For the glory of the collective",
   },
   RU: {
     title: "Коммунистический Кот",
@@ -37,10 +43,24 @@ const t = {
     ready: "Субъект готов к выдаче униформы.",
     button: "Выдать Униформу",
     error_type: "Пожалуйста, предоставьте утвержденный файл изображения.",
+    comms_title: "Партийная Связь",
+    comms_hint: "Утверждённые каналы славного коллектива",
+    ca_label: "Адрес Государственного Контракта",
+    copy: "Копировать",
+    copied: "Скопировано, Товарищ!",
+    footer_motto: "Во славу коллектива",
   }
 };
 
 type Lang = 'EN' | 'RU';
+
+const LINKS = {
+  x: "https://x.com/communistcatcto",
+  telegram: "https://t.me/communistcaton",
+  dexscreener: "https://dexscreener.com/ton/EQAfFMatcv3y7XGCenhc7lpWDYSfEo1wO8FPEMf4A5POpUYQ",
+  website: "https://communistcat.fun/",
+};
+const CONTRACT = "EQBpfD5q4aFgHU17KvNPN_P0QOy41MOIj2TwGX0bbAz44DNs";
 
 export default function App() {
   const [lang, setLang] = useState<Lang>('EN');
@@ -49,10 +69,21 @@ export default function App() {
   const [resultImage, setResultImage] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const [copied, setCopied] = useState(false);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const l = t[lang];
+
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(CONTRACT);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* clipboard unavailable */
+    }
+  };
 
   const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null);
@@ -107,6 +138,16 @@ export default function App() {
         method: "POST",
         body: formData,
       });
+
+      // The API always replies with JSON. If we get HTML instead (an SPA
+      // fallback when no backend is present, or a proxy/cold-start error page)
+      // show a themed message rather than a raw "unexpected token '<'" error.
+      const contentType = res.headers.get("content-type") || "";
+      if (!contentType.includes("application/json")) {
+        throw new Error(
+          "The recruitment bureau could not be reached, comrade. The processing service may be offline or waking from its slumber — try again shortly."
+        );
+      }
 
       const data = await res.json();
 
@@ -295,6 +336,63 @@ export default function App() {
                 </div>
             </div>
         )}
+
+        {/* Party Communications / Official Channels */}
+        <footer className="pt-10 mt-8 border-t-4 border-red-900/50 space-y-8">
+          <div className="text-center space-y-2">
+            <div className="flex items-center justify-center gap-3">
+              <div className="h-[3px] w-12 bg-red-700"></div>
+              <Star className="w-5 h-5 text-[#ffcc00] fill-[#ffcc00]" />
+              <h3 className="font-display text-[#ffcc00] uppercase tracking-[0.2em] text-xl sm:text-2xl">{l.comms_title}</h3>
+              <Star className="w-5 h-5 text-[#ffcc00] fill-[#ffcc00]" />
+              <div className="h-[3px] w-12 bg-red-700"></div>
+            </div>
+            <p className="font-mono text-xs uppercase tracking-widest text-neutral-500">{l.comms_hint}</p>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
+            {[
+              { href: LINKS.x, label: "X", Icon: Twitter },
+              { href: LINKS.telegram, label: "Telegram", Icon: Send },
+              { href: LINKS.dexscreener, label: "Dexscreener", Icon: TrendingUp },
+              { href: LINKS.website, label: "Website", Icon: Globe },
+            ].map(({ href, label, Icon }) => (
+              <a
+                key={label}
+                href={href}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="group flex items-center justify-center gap-3 bg-[#1a1a1a] border-2 border-red-800 hover:border-[#ffcc00] px-4 py-4 transition-all shadow-[4px_4px_0_0_rgba(153,27,27,0.5)] hover:shadow-[6px_6px_0_0_#ffcc00] hover:-translate-x-[2px] hover:-translate-y-[2px]"
+              >
+                <Icon className="w-5 h-5 text-red-500 group-hover:text-[#ffcc00] transition-colors" />
+                <span className="font-display uppercase tracking-widest text-sm text-neutral-300 group-hover:text-white">{label}</span>
+              </a>
+            ))}
+          </div>
+
+          <div className="max-w-3xl mx-auto bg-red-950/30 border-2 border-red-900 p-4 shadow-[6px_6px_0_0_rgba(153,27,27,0.3)]">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-5 h-5 bg-red-700 rotate-45 flex items-center justify-center">
+                <Star className="w-3 h-3 text-[#ffcc00] fill-[#ffcc00] -rotate-45" />
+              </div>
+              <span className="font-mono text-xs uppercase tracking-widest text-[#ffcc00]">{l.ca_label}</span>
+            </div>
+            <div className="flex items-center gap-3 flex-wrap">
+              <code className="font-mono text-xs sm:text-sm text-neutral-300 break-all flex-1 min-w-0">{CONTRACT}</code>
+              <button
+                onClick={handleCopy}
+                className="flex items-center gap-2 bg-red-700 hover:bg-red-600 text-white font-display uppercase tracking-widest text-xs px-4 py-2 border-2 border-red-500 shadow-[3px_3px_0_0_#ffcc00] active:translate-x-[3px] active:translate-y-[3px] active:shadow-none transition-all flex-shrink-0"
+              >
+                {copied ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copied ? l.copied : l.copy}
+              </button>
+            </div>
+          </div>
+
+          <p className="text-center font-mono text-[10px] sm:text-xs uppercase tracking-[0.3em] text-neutral-600 pt-2">
+            ☭ {l.title} // {l.footer_motto} ☭
+          </p>
+        </footer>
 
       </div>
     </div>
