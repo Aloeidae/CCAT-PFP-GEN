@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import { Upload, Image as ImageIcon, Star, AlertCircle, RefreshCw, Globe, Send, Twitter, TrendingUp, Copy, Check } from "lucide-react";
+import { Upload, Image as ImageIcon, Star, AlertCircle, RefreshCw, Globe, Send, Twitter, TrendingUp, Copy, Check, Download } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 const t = {
@@ -27,6 +27,7 @@ const t = {
     ca_label: "State Contract Address",
     copy: "Copy",
     copied: "Copied, Comrade!",
+    download: "Download Portrait",
     footer_motto: "For the glory of the collective",
     wait_notice: "Processing may take up to 60 seconds. Patience is a revolutionary virtue, comrade.",
     slogans: [
@@ -63,6 +64,7 @@ const t = {
     ca_label: "Адрес Государственного Контракта",
     copy: "Копировать",
     copied: "Скопировано, Товарищ!",
+    download: "Скачать Портрет",
     footer_motto: "Во славу коллектива",
     wait_notice: "Обработка может занять до 60 секунд. Терпение — революционная добродетель, товарищ.",
     slogans: [
@@ -123,6 +125,27 @@ export default function App() {
       setTimeout(() => setCopied(false), 2000);
     } catch {
       /* clipboard unavailable */
+    }
+  };
+
+  const handleDownload = async () => {
+    if (!resultImage) return;
+    try {
+      // Runware images are served with permissive CORS, so we can fetch the
+      // blob and trigger a real download (the `download` attribute is ignored
+      // for cross-origin <a> hrefs).
+      const res = await fetch(resultImage);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "communist-cat-ushanka.png";
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      window.open(resultImage, "_blank");
     }
   };
 
@@ -334,7 +357,16 @@ export default function App() {
                                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay pointer-events-none"></div>
                                     {isLoading ? (
                                         <div className="flex flex-col items-center gap-6 text-red-500 z-10 w-full">
-                                            <div className="w-16 h-16 border-8 border-red-950 border-t-red-600 rounded-none animate-spin"></div>
+                                            <div className="relative w-20 h-20 flex items-center justify-center">
+                                                <motion.div
+                                                    animate={{ rotate: 360 }}
+                                                    transition={{ duration: 3, repeat: Infinity, ease: "linear" }}
+                                                    className="absolute inset-0 flex items-center justify-center"
+                                                >
+                                                    <Star className="w-20 h-20 text-red-600 fill-red-600 drop-shadow-[0_0_10px_rgba(220,38,38,0.7)]" />
+                                                </motion.div>
+                                                <span className="relative z-10 text-[#ffcc00] text-3xl leading-none" style={{ textShadow: "0 0 4px rgba(0,0,0,0.7)" }}>☭</span>
+                                            </div>
                                             <p className="font-display text-2xl uppercase tracking-[0.2em] animate-pulse text-[#ffcc00] bg-black/50 px-4 py-2 border border-red-900/50">{l.processing}</p>
                                             <div className="h-14 flex items-center justify-center w-full max-w-xs">
                                                 <AnimatePresence mode="wait">
@@ -389,6 +421,17 @@ export default function App() {
                                 </motion.div>
                             )}
                         </AnimatePresence>
+
+                        {resultImage && (
+                            <motion.button
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                onClick={handleDownload}
+                                className="w-full bg-[#ffcc00] hover:bg-yellow-400 text-red-900 font-display text-xl uppercase tracking-[0.15em] py-4 px-6 border-2 border-yellow-600 shadow-[6px_6px_0_0_#7f1d1d] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0_0_#7f1d1d] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center gap-3"
+                            >
+                                <Download className="w-6 h-6" /> {l.download}
+                            </motion.button>
+                        )}
                     </div>
 
                 </div>
