@@ -4,7 +4,7 @@
  */
 
 import React, { useState, useRef, useEffect } from "react";
-import { Upload, Image as ImageIcon, Star, AlertCircle, RefreshCw, Globe, Send, Twitter, TrendingUp, Copy, Check, Download } from "lucide-react";
+import { Upload, Image as ImageIcon, Star, AlertCircle, RefreshCw, Globe, Send, Twitter, TrendingUp, Copy, Check, Download, Coins } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
 const t = {
@@ -24,6 +24,7 @@ const t = {
     error_type: "Please select a valid state-approved image file.",
     comms_title: "Party Communications",
     comms_hint: "Purr-oved channels of the glorious collective",
+    buy: "Buy $CCAT",
     ca_label: "State Contract Address",
     copy: "Copy",
     copied: "Copied, Comrade!",
@@ -63,6 +64,7 @@ const t = {
     error_type: "Пожалуйста, предоставьте утвержденный файл изображения.",
     comms_title: "Партийная Связь",
     comms_hint: "Мур-утверждённые каналы славного коллектива",
+    buy: "Купить $CCAT",
     ca_label: "Адрес Государственного Контракта",
     copy: "Копировать",
     copied: "Скопировано, Товарищ!",
@@ -91,6 +93,7 @@ const t = {
 type Lang = 'EN' | 'RU';
 
 const LINKS = {
+  buy: "https://dedust.io/swap/TON/EQBpfD5q4aFgHU17KvNPN_P0QOy41MOIj2TwGX0bbAz44DNs",
   x: "https://x.com/communistcatcto",
   telegram: "https://t.me/communistcaton",
   dexscreener: "https://dexscreener.com/ton/EQAfFMatcv3y7XGCenhc7lpWDYSfEo1wO8FPEMf4A5POpUYQ",
@@ -454,6 +457,15 @@ export default function App() {
             </div>
             <p className="font-mono text-xs uppercase tracking-widest text-neutral-500">{l.comms_hint}</p>
           </div>
+
+          <a
+            href={LINKS.buy}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="group flex items-center justify-center gap-3 max-w-md mx-auto bg-[#ffcc00] hover:bg-yellow-400 text-red-900 font-display text-2xl sm:text-3xl uppercase tracking-[0.15em] py-5 px-6 border-2 border-yellow-600 shadow-[6px_6px_0_0_#7f1d1d] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0_0_#7f1d1d] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all"
+          >
+            <Coins className="w-7 h-7 group-hover:rotate-12 transition-transform" /> {l.buy}
+          </a>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-3xl mx-auto">
             {[
