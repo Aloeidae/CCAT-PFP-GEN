@@ -140,21 +140,10 @@ async function startServer() {
         });
       }
 
-      const ushankaUploadUUID = crypto.randomUUID();
-      const userUploadUUID = crypto.randomUUID();
-
-      const uploadResults = await runwareCall([
-        { taskType: "imageUpload", taskUUID: ushankaUploadUUID, image: ushankaDataUri },
-        { taskType: "imageUpload", taskUUID: userUploadUUID, image: base64UserImage },
-      ]);
-
-      const ushankaResult = uploadResults.get(ushankaUploadUUID);
-      const userResult = uploadResults.get(userUploadUUID);
-
-      if (!ushankaResult?.imageUUID || !userResult?.imageUUID) {
-        return res.status(500).json({ error: "Failed to upload images to Runware" });
-      }
-
+      // Pass both images directly as data URIs in referenceImages — no separate
+      // upload step. referenceImages MUST be nested inside `inputs` for the
+      // Gemini / Nano-Banana model (google:4@3). Image 1 = ushanka, image 2 =
+      // user portrait, matching the "image 1"/"image 2" references in PROMPT.
       const inferenceUUID = crypto.randomUUID();
       const inferenceResults = await runwareCall([
         {
@@ -166,7 +155,9 @@ async function startServer() {
           height: 512,
           numberResults: 1,
           outputFormat: "PNG",
-          inputImages: [ushankaResult.imageUUID, userResult.imageUUID],
+          inputs: {
+            referenceImages: [ushankaDataUri, base64UserImage],
+          },
         },
       ]);
 
