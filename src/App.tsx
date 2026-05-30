@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { Upload, Image as ImageIcon, Star, AlertCircle, RefreshCw, Globe, Send, Twitter, TrendingUp, Copy, Check } from "lucide-react";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -28,6 +28,21 @@ const t = {
     copy: "Copy",
     copied: "Copied, Comrade!",
     footer_motto: "For the glory of the collective",
+    wait_notice: "Processing may take up to 60 seconds. Patience is a revolutionary virtue, comrade.",
+    slogans: [
+      "Redistributing pixels to the proletariat...",
+      "The means of production are warming up...",
+      "Forging the people's headwear...",
+      "Mobilizing the fur reserves of the motherland...",
+      "Standing in line for your ushanka... (this is normal)",
+      "Each according to his need, each cat according to his hat...",
+      "The Five-Year Plan nears completion...",
+      "Consulting the Ministry of Warm Ears...",
+      "Awaiting approval from the Supreme Soviet of Cats...",
+      "Hand-stitching glory onto your portrait...",
+      "Polishing the red star until it gleams...",
+      "Glory to the collective! Assembling your likeness...",
+    ],
   },
   RU: {
     title: "Коммунистический Кот",
@@ -49,6 +64,21 @@ const t = {
     copy: "Копировать",
     copied: "Скопировано, Товарищ!",
     footer_motto: "Во славу коллектива",
+    wait_notice: "Обработка может занять до 60 секунд. Терпение — революционная добродетель, товарищ.",
+    slogans: [
+      "Перераспределяем пиксели пролетариату...",
+      "Средства производства разогреваются...",
+      "Куём народный головной убор...",
+      "Мобилизуем меховые резервы родины...",
+      "Стоим в очереди за ушанкой... (это нормально)",
+      "Каждому по потребности, каждому коту по шапке...",
+      "Пятилетка близится к завершению...",
+      "Консультируемся с Министерством Тёплых Ушей...",
+      "Ожидаем одобрения Верховного Совета Котов...",
+      "Вручную пришиваем славу к вашему портрету...",
+      "Полируем красную звезду до блеска...",
+      "Слава коллективу! Собираем ваш образ...",
+    ],
   }
 };
 
@@ -70,10 +100,21 @@ export default function App() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [sloganIndex, setSloganIndex] = useState(0);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const l = t[lang];
+
+  // Cycle the loading slogans every 7s while a generation is in flight.
+  useEffect(() => {
+    if (!isLoading) return;
+    setSloganIndex(0);
+    const id = setInterval(() => {
+      setSloganIndex((i) => (i + 1) % l.slogans.length);
+    }, 7000);
+    return () => clearInterval(id);
+  }, [isLoading, l.slogans.length]);
 
   const handleCopy = async () => {
     try {
@@ -292,9 +333,26 @@ export default function App() {
                                 >
                                     <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20 mix-blend-overlay pointer-events-none"></div>
                                     {isLoading ? (
-                                        <div className="flex flex-col items-center gap-8 text-red-500 z-10">
+                                        <div className="flex flex-col items-center gap-6 text-red-500 z-10 w-full">
                                             <div className="w-16 h-16 border-8 border-red-950 border-t-red-600 rounded-none animate-spin"></div>
                                             <p className="font-display text-2xl uppercase tracking-[0.2em] animate-pulse text-[#ffcc00] bg-black/50 px-4 py-2 border border-red-900/50">{l.processing}</p>
+                                            <div className="h-14 flex items-center justify-center w-full max-w-xs">
+                                                <AnimatePresence mode="wait">
+                                                    <motion.p
+                                                        key={sloganIndex}
+                                                        initial={{ opacity: 0, y: 12 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        exit={{ opacity: 0, y: -12 }}
+                                                        transition={{ duration: 0.4 }}
+                                                        className="font-mono text-sm text-neutral-300 uppercase tracking-wider text-center"
+                                                    >
+                                                        {l.slogans[sloganIndex]}
+                                                    </motion.p>
+                                                </AnimatePresence>
+                                            </div>
+                                            <p className="font-mono text-[10px] uppercase tracking-[0.2em] text-neutral-500 max-w-xs text-center border-t border-red-900/40 pt-3">
+                                                {l.wait_notice}
+                                            </p>
                                         </div>
                                     ) : (
                                         <div className="flex flex-col items-center gap-10 z-10">
