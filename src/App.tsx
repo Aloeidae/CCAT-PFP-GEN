@@ -10,25 +10,25 @@ import { motion, AnimatePresence } from "motion/react";
 const t = {
   EN: {
     title: "Communist Cat",
-    subtitle: "Recruitment Center",
-    description: "Join the glorious ranks! Upload a comrade's portrait to receive an official state-issued Ushanka. Our glorious AI will ensure perfect Soviet compliance and perspective alignment.",
+    subtitle: "Feline Recruitment Bureau",
+    description: "Join the glorious ranks! Upload a comrade's portrait to receive an official state-issued ushanka. Our glorious feline bureau ensures purr-fect Soviet compliance and maximum comradely warmth.",
     upload_zone: "Provide Identification Photo",
     upload_hint: "Click or Drag & Drop to submit documents",
-    original_label: "Unverified Citizen",
+    original_label: "Stray Cat (Unverified)",
     resubmit: "[ Resubmit ]",
-    start_over: "Process New Comrade",
-    result_label: "Official Comrade",
+    start_over: "Process Another Stray",
+    result_label: "Certified Comrade Cat",
     processing: "Manufacturing Ushanka...",
-    ready: "Subject ready for uniform distribution.",
-    button: "Issue Uniform",
+    ready: "Comrade ready for uniform distribution. Purr responsibly.",
+    button: "Conscript Comrade",
     error_type: "Please select a valid state-approved image file.",
     comms_title: "Party Communications",
-    comms_hint: "Approved channels of the glorious collective",
+    comms_hint: "Purr-oved channels of the glorious collective",
     ca_label: "State Contract Address",
     copy: "Copy",
     copied: "Copied, Comrade!",
     download: "Download Portrait",
-    footer_motto: "For the glory of the collective",
+    footer_motto: "Fur the glory of the collective",
     wait_notice: "Processing may take up to 60 seconds. Patience is a revolutionary virtue, comrade.",
     slogans: [
       "Seizing the means of purr-duction...",
@@ -49,25 +49,25 @@ const t = {
   },
   RU: {
     title: "Коммунистический Кот",
-    subtitle: "Призывной Пункт",
-    description: "Вступай в славные ряды! Загрузите портрет товарища, чтобы получить ушанку. Наш великий ИИ обеспечит идеальное соответствие советским стандартам.",
+    subtitle: "Кошачий Призывной Пункт",
+    description: "Вступай в славные ряды! Загрузите портрет товарища, чтобы получить ушанку государственного образца. Наше славное кошачье бюро обеспечит мур-фектное соответствие советским стандартам и максимальное товарищеское тепло.",
     upload_zone: "Предоставьте Фотографию",
     upload_hint: "Нажмите или перетащите для подачи документов",
-    original_label: "Неопознанный Гражданин",
+    original_label: "Бродячий Кот (Неопознанный)",
     resubmit: "[ Пересдать ]",
-    start_over: "Оформить Нового Товарища",
-    result_label: "Официальный Товарищ",
+    start_over: "Оформить Нового Бродягу",
+    result_label: "Дипломированный Товарищ Кот",
     processing: "Производство Ушанки...",
-    ready: "Субъект готов к выдаче униформы.",
-    button: "Выдать Униформу",
+    ready: "Товарищ готов к выдаче униформы. Мурлычьте ответственно.",
+    button: "Призвать Товарища",
     error_type: "Пожалуйста, предоставьте утвержденный файл изображения.",
     comms_title: "Партийная Связь",
-    comms_hint: "Утверждённые каналы славного коллектива",
+    comms_hint: "Мур-утверждённые каналы славного коллектива",
     ca_label: "Адрес Государственного Контракта",
     copy: "Копировать",
     copied: "Скопировано, Товарищ!",
     download: "Скачать Портрет",
-    footer_motto: "Во славу коллектива",
+    footer_motto: "Во славу пушистого коллектива",
     wait_notice: "Обработка может занять до 60 секунд. Терпение — революционная добродетель, товарищ.",
     slogans: [
       "Захватываем средства мур-изводства...",
@@ -419,7 +419,7 @@ export default function App() {
                                         <div className="w-4 h-1 bg-red-500/50 absolute"></div>
                                     </div>
                                     <div className="absolute bottom-4 right-4 text-[#ffcc00] font-mono text-xs opacity-50 z-10 pointer-events-none mix-blend-overlay uppercase">
-                                        [ APPROVED ]
+                                        [ PURR-OVED ]
                                     </div>
                                     <img src={resultImage} alt="Composited result" className="w-full h-auto object-cover aspect-[4/5] md:aspect-auto contrast-110 saturate-[1.1] sepia-[10%]" />
                                 </motion.div>
