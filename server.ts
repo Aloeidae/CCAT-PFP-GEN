@@ -11,9 +11,8 @@ dotenv.config();
 const app = express();
 const PORT = Number(process.env.PORT) || 3001;
 
-// Render terminates TLS at a single proxy hop and forwards the client IP via
-// X-Forwarded-For. Trust exactly one hop so the rate limiter keys on the real
-// client IP (and not the proxy) without letting clients spoof the header.
+// Render sits in front of one proxy hop. Trust exactly one so the rate limiter
+// keys on the real client IP and not the proxy.
 app.set("trust proxy", 1);
 
 const upload = multer({
@@ -21,9 +20,7 @@ const upload = multer({
   limits: { fileSize: 10 * 1024 * 1024 },
 });
 
-// Public, unauthenticated endpoint: cap generations per IP so a single visitor
-// can't burn the shared Runware budget. The hard backstop is the Runware spend
-// limit set in the dashboard.
+// Cap generations per IP so one visitor can't drain the shared Runware budget.
 const generationLimiter = rateLimit({
   windowMs: 10 * 60 * 1000, // 10 minutes
   max: 8,
@@ -35,8 +32,8 @@ const generationLimiter = rateLimit({
   },
 });
 
-// The ushanka reference image ships with the app and is sent to Runware as a
-// base64 data URI, so there is no external URL that can expire or 404.
+// Bundled reference hat, sent to Runware as a base64 data URI so no external
+// URL can expire.
 const USHANKA_PATH = path.join(process.cwd(), "assets", "ushanka.png");
 
 function loadUshankaDataUri(): string {
@@ -79,7 +76,7 @@ function runwareCall(tasks: object[]): Promise<Map<string, any>> {
         return;
       }
 
-      // Runware wraps results in { data: [...] } and errors in { errors: [...] }.
+      // Results arrive as { data: [...] }, errors as { errors: [...] }.
       const errors = parsed.errors ?? (parsed.error ? [parsed] : []);
       if (errors.length) {
         clearTimeout(timeout);
@@ -122,7 +119,6 @@ function runwareCall(tasks: object[]): Promise<Map<string, any>> {
 }
 
 async function startServer() {
-  // API routes registered first, before any other middleware
   app.post("/api/edit-image", generationLimiter, upload.single("image"), async (req, res) => {
     try {
       if (!req.file) {
@@ -140,10 +136,8 @@ async function startServer() {
         });
       }
 
-      // Pass both images directly as data URIs in referenceImages — no separate
-      // upload step. referenceImages MUST be nested inside `inputs` for the
-      // Gemini / Nano-Banana model (google:4@3). Image 1 = ushanka, image 2 =
-      // user portrait, matching the "image 1"/"image 2" references in PROMPT.
+      // referenceImages must be nested in `inputs` for google:4@3.
+      // Image 1 is the ushanka, image 2 the user portrait, matching PROMPT.
       const inferenceUUID = crypto.randomUUID();
       const inferenceResults = await runwareCall([
         {
@@ -175,9 +169,7 @@ async function startServer() {
   });
 
   if (process.env.NODE_ENV !== "production") {
-    // Vite and its (ESM-only) plugins are loaded lazily here, never at the top
-    // level, so the production CJS bundle never require()s them. Config is inlined
-    // (configFile: false) so Vite doesn't read vite.config.ts off disk.
+    // Load Vite lazily in dev only so the production CJS bundle never pulls it in.
     const { createServer: createViteServer } = await import("vite");
     const react = (await import("@vitejs/plugin-react")).default;
     const tailwindcss = (await import("@tailwindcss/vite")).default;

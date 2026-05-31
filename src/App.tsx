@@ -40,7 +40,7 @@ const t = {
       "Karl Meowx is reviewing your application...",
       "Establishing the dictatorship of the purr-letariat...",
       "The Great Leap Fur-ward is underway...",
-      "Workers of the world, unite — then knock a glass off the table...",
+      "Workers of the world, unite, then knock a glass off the table...",
       "Abolishing private property, starting with that sunbeam...",
       "Comrade cat is hunting counter-revolutionary mice...",
       "Five-Year Plan: more naps, more treats, fewer baths...",
@@ -70,7 +70,7 @@ const t = {
     copied: "Скопировано, Товарищ!",
     download: "Скачать Портрет",
     footer_motto: "Во славу пушистого коллектива",
-    wait_notice: "Обработка может занять до 60 секунд. Терпение — революционная добродетель, товарищ.",
+    wait_notice: "Обработка может занять до 60 секунд. Терпение есть революционная добродетель, товарищ.",
     slogans: [
       "Захватываем средства мур-изводства...",
       "От каждого по способностям, каждому по дрёме...",
@@ -80,7 +80,7 @@ const t = {
       "Карл Мяуркс рассматривает вашу заявку...",
       "Устанавливаем диктатуру мур-летариата...",
       "Большой кошачий скачок вперёд начался...",
-      "Пролетарии всех стран, объединяйтесь — и роняйте чашки со стола...",
+      "Пролетарии всех стран, объединяйтесь и роняйте чашки со стола...",
       "Отменяем частную собственность, начиная с того солнечного пятна...",
       "Товарищ кот выслеживает контрреволюционных мышей...",
       "Пятилетка: больше снов, больше вкусняшек, меньше купаний...",
@@ -115,7 +115,7 @@ export default function App() {
 
   const l = t[lang];
 
-  // Cycle the loading slogans every 7s while a generation is in flight.
+  // Rotate the loading slogans while a generation is running.
   useEffect(() => {
     if (!isLoading) return;
     setSloganIndex(0);
@@ -138,9 +138,8 @@ export default function App() {
   const handleDownload = async () => {
     if (!resultImage) return;
     try {
-      // Runware images are served with permissive CORS, so we can fetch the
-      // blob and trigger a real download (the `download` attribute is ignored
-      // for cross-origin <a> hrefs).
+      // Fetch the blob and download it. A plain download attribute is ignored
+      // on cross-origin links.
       const res = await fetch(resultImage);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
@@ -210,13 +209,12 @@ export default function App() {
         body: formData,
       });
 
-      // The API always replies with JSON. If we get HTML instead (an SPA
-      // fallback when no backend is present, or a proxy/cold-start error page)
-      // show a themed message rather than a raw "unexpected token '<'" error.
+      // The API always replies with JSON. HTML means the backend is missing or
+      // still cold, so show a readable message instead of a JSON parse error.
       const contentType = res.headers.get("content-type") || "";
       if (!contentType.includes("application/json")) {
         throw new Error(
-          "The recruitment bureau could not be reached, comrade. The processing service may be offline or waking from its slumber — try again shortly."
+          "The recruitment bureau could not be reached, comrade. The processing service may be offline or waking from its slumber. Try again shortly."
         );
       }
 
@@ -280,8 +278,17 @@ export default function App() {
           </p>
         </header>
 
+        {/* Mounted once so both the upload zone and the post-result button can open it. */}
+        <input
+            type="file"
+            accept="image/*"
+            className="hidden"
+            ref={fileInputRef}
+            onChange={handleFileSelect}
+        />
+
         {error && (
-            <motion.div 
+            <motion.div
               initial={{ opacity: 0, y: -10 }}
               animate={{ opacity: 1, y: 0 }}
               className="bg-red-950 border border-red-500 text-red-200 px-6 py-4 rounded-none flex items-center gap-3 text-sm font-medium w-full max-w-2xl mx-auto shadow-[4px_4px_0px_0px_rgba(220,38,38,1)]"
@@ -300,13 +307,6 @@ export default function App() {
                onClick={() => fileInputRef.current?.click()}
                className="border-4 border-dashed border-red-800 hover:border-red-500 bg-[#222] hover:bg-[#2a2a2a] transition-all cursor-pointer rounded-none p-16 flex flex-col items-center justify-center gap-6 text-neutral-400 group max-w-2xl mx-auto aspect-video relative shadow-[8px_8px_0px_0px_rgba(153,27,27,0.5)] hover:translate-x-[-2px] hover:translate-y-[-2px] hover:shadow-[10px_10px_0px_0px_rgba(220,38,38,0.8)]"
             >
-                <input 
-                    type="file" 
-                    accept="image/*" 
-                    className="hidden" 
-                    ref={fileInputRef} 
-                    onChange={handleFileSelect} 
-                />
                 <div className="w-20 h-20 bg-red-950 border-2 border-red-800 group-hover:border-red-500 rounded-none flex items-center justify-center transition-colors">
                     <Upload className="w-10 h-10 text-red-500" />
                 </div>
@@ -430,14 +430,24 @@ export default function App() {
                         </AnimatePresence>
 
                         {resultImage && (
-                            <motion.button
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                onClick={handleDownload}
-                                className="w-full bg-[#ffcc00] hover:bg-yellow-400 text-red-900 font-display text-xl uppercase tracking-[0.15em] py-4 px-6 border-2 border-yellow-600 shadow-[6px_6px_0_0_#7f1d1d] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0_0_#7f1d1d] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center gap-3"
-                            >
-                                <Download className="w-6 h-6" /> {l.download}
-                            </motion.button>
+                            <div className="space-y-4">
+                                <motion.button
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onClick={handleDownload}
+                                    className="w-full bg-[#ffcc00] hover:bg-yellow-400 text-red-900 font-display text-xl uppercase tracking-[0.15em] py-4 px-6 border-2 border-yellow-600 shadow-[6px_6px_0_0_#7f1d1d] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0_0_#7f1d1d] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center gap-3"
+                                >
+                                    <Download className="w-6 h-6" /> {l.download}
+                                </motion.button>
+                                <motion.button
+                                    initial={{ opacity: 0, y: 12 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    onClick={() => fileInputRef.current?.click()}
+                                    className="w-full bg-red-700 hover:bg-red-600 text-white font-display text-xl uppercase tracking-[0.15em] py-4 px-6 border-2 border-red-500 shadow-[6px_6px_0_0_#7f1d1d] hover:translate-x-[2px] hover:translate-y-[2px] hover:shadow-[4px_4px_0_0_#7f1d1d] active:translate-x-[6px] active:translate-y-[6px] active:shadow-none transition-all flex items-center justify-center gap-3"
+                                >
+                                    <RefreshCw className="w-6 h-6" /> {l.start_over}
+                                </motion.button>
+                            </div>
                         )}
                     </div>
 
