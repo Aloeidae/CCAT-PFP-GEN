@@ -2,6 +2,8 @@
 
 Upload a portrait and get it back wearing an official state-issued ushanka. Image generation runs through Runware.
 
+Code is mostly generative with some manual fixes.
+
 ## Requirements
 
 - Node.js 22
